@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * @file
+ * Provides schema for database table.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function catering_schema() {
+
+  $schema['catering_meal_choices'] = array(
+    'description' => 'Store meal choices',
+    'fields' => array(
+      'sid' => array(
+       'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'The submission id',
+      ),
+      'first' => array(
+        'type' => 'varchar',
+        'not null' => TRUE,
+        'length' => '55',
+        'description' => 'First name',
+      ),
+      'last' => array(
+        'type' => 'varchar',
+        'not null' => TRUE,
+        'length' => '55',
+        'description' => 'Last name',
+      ),
+      'email' => array(
+        'type' => 'varchar',
+        'not null' => TRUE,
+        'length' => '55',
+        'description' => 'Email address',
+      ),
+      'meal_type' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Type of meal requested',
+      ),
+      'diet_restrict' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Select list for dietary restrictions',
+      ),
+      'special_instruct' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+        'description' => 'Text area for special instructions',
+      ),
+    ),
+    'primary key' => array('sid'),
+  );
+
+  return $schema;
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function catering_uninstall() {
+  // Deletes variable for user role that will be notified of special instructions.
+  variable_del('catering_notify_role');
+}

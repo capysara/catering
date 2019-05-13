@@ -1,0 +1,134 @@
+<?php
+
+/**
+ * @file
+ * Provides custom pages for Meal Choices form and admin view of meal types.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function catering_menu() {
+
+  $items = array();
+
+  $items['catering/meal-choices'] = array(
+    'title' => 'Meal Choices',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('catering_meal_choices'),
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'catering.inc',
+    'menu_name' => 'main-menu',
+  );
+  $items['catering/meal-types'] = array(
+    'title' => 'Meal Type Totals',
+    'page callback' => 'meal_choices_submitted_value_callback',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'menu_name' => 'main-menu',
+  );
+  $items['admin/config/catering'] = array(
+    'title' => 'Catering',
+    'description' => 'Custom configurations for Catering website.',
+    'position' => 'right',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'weight' => 100,
+  );
+
+  $items['admin/config/catering/role-notification'] = array(
+    'title' => 'Special instructions notification',
+    'description' => 'Choose the role that should receive email notifications of special instructions.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_catering_role_notification'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+
+  return $items;
+
+}
+
+/**
+ * Custom function for configuration page to select user role to receive
+ * notifications when special instructions are submitted.
+ */
+function _catering_role_notification() {
+  $form = array();
+
+  // Get user roles by name, instead of rid, excluding anonymous and
+  // restricting to users with specified permission.
+  $user_role_name = array_flip(user_roles($membersonly = TRUE, $permission = 'administer site configuration'));
+  // Use 'administrator' role (provided out of the box) as default, if available.
+  $admin_default = isset($user_role_name['administrator']) ? $user_role_name['administrator'] : "";
+
+  $form['catering_notify_role'] = array(
+    '#type' => 'select',
+    '#title' => t('Role to receive notifications'),
+    '#description' => t('Select the user role that will receive email ' .
+      'notifications when users submit special instructions'),
+    '#default_value' => variable_get('catering_notify_role', $admin_default),
+    '#options' => user_roles($membersonly = TRUE, $permission = 'administer site configuration'),
+    '#empty_option' => t('No notifications'),
+    '#required' => FALSE,
+  );
+
+  if ($form['catering_notify_role']['#default_value']) {
+    variable_set('catering_notify_role', $form['catering_notify_role']['#default_value']);
+  };
+
+  return system_settings_form($form);
+
+}
+
+/**
+ * Page callback for admin view of total meal types.
+ */
+function meal_choices_submitted_value_callback() {
+  $query = db_query("SELECT COUNT(*)
+    AS meals_type
+    FROM catering_meal_choices
+    GROUP BY
+      meal_type"
+  );
+
+  $meal_types = $query->fetchAll();
+
+  $meat = $fish = $veg = 0;
+
+  if ($meal_types) {
+    $meat = isset($meal_types[0]) ? $meal_types[0]->meals_type : 0;
+    $fish = isset($meal_types[1]) ? $meal_types[1]->meals_type : 0;
+    $veg = isset($meal_types[2]) ? $meal_types[2]->meals_type : 0;
+  }
+
+  $output = theme('catering_meal_types', array(
+    'meat' => $meat,
+    'fish' => $fish,
+    'veg' => $veg,
+  ));
+
+  return $output;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function catering_theme($existing, $type, $theme, $path) {
+  return array(
+    'catering_meal_types' => array(
+      'variables' => array(
+        'meat' => NULL,
+        'fish' => NULL,
+        'veg' => NULL,
+      ),
+      'template' => 'page--catering--meal-types',
+      'path' => drupal_get_path('module', 'catering') . '/templates'
+    )
+  );
+}

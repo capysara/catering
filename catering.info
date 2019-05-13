@@ -1,0 +1,8 @@
+name = Catering
+description = Adds main menu tab, config for email notifications, form for meal choice submissions, and results display.
+package = Custom
+version = "7.x-1.x"
+core = "7.x"
+configure = admin/config/catering/role-notification
+
+stylesheets[all][] = css/catering.css
